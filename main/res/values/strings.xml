@@ -7,4 +7,11 @@
     <string name="action_settings">Settings</string>
     <string name="gcm_defaultSenderId">343011968201</string>
     <string name="upstream_message_id_not_provided">Upstream Message ID not provided!</string>
+    <string name="description">Description</string>
+    <string name="clear">Clear</string>
+    <string name="next">Next</string>
+    <string name="submit">Submit</string>
+    <string name="signature_heading">Please Sign Below</string>
+    <string name="pick_from_galler">GALLERY</string>
+    <string name="click_pic">CAMERA</string>
 </resources>

@@ -32,7 +32,7 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
     /**
      * The desired interval for location updates. Inexact. Updates may be more or less frequent.
      */
-    public static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
+    public static final long UPDATE_INTERVAL_IN_MILLISECONDS = 2*60*1000;
 
     /**
      * The fastest rate for active location updates. Exact. Updates will never be more frequent
@@ -54,12 +54,14 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
 
     private String detectedActivity=null;
 
+    boolean isPollingLocation=false;
+
     @Override
     public void onCreate() {
         super.onCreate();
         mInProgress = false;
         servicesAvailable = servicesConnected();
-        mLocationRequest=createLocationRequest(detectedActivity);
+        mLocationRequest=createLocationRequest();
         setUpLocationClientIfNeeded();
 
         receiver=new BroadcastReceiver() {
@@ -68,7 +70,8 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
                 String action = intent.getAction();
                 if(action.equals("tracknack.detectedactivity")){
                     detectedActivity = intent.getExtras().getString("ACTIVITY");
-                    mLocationRequest=createLocationRequest(detectedActivity);
+                    handleLocationUpdateFrequency(detectedActivity);
+
                 }
             }
         };
@@ -119,13 +122,8 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
         Intent intent = new Intent(this, LocationReceiver.class);
         locationIntent = PendingIntent.getBroadcast(getApplicationContext(), 14872, intent, PendingIntent.FLAG_CANCEL_CURRENT);
         PendingIntent activityIntent=PendingIntent.getService(getApplicationContext(),0,new Intent(this,IntervalPendingIntentService.class),PendingIntent.FLAG_CANCEL_CURRENT);
-        if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, 1, 0) == PackageManager.PERMISSION_GRANTED
-                || checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION,1,0) == PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "inside checkperm");
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationIntent);
-        }
-
-        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mGoogleApiClient,0,activityIntent);
+        startLocationUpdates();
+        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(mGoogleApiClient, 0, activityIntent);
     }
 
 
@@ -139,35 +137,35 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
 
     }
 
-    protected LocationRequest createLocationRequest(String detectedActivity) {
+    protected LocationRequest createLocationRequest() {
         LocationRequest mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        return mLocationRequest;
+    }
+
+    protected void handleLocationUpdateFrequency(String detectedActivity) {
         if(detectedActivity==null) {
-            Log.d(TAG,"UNKNOWN HIGH ACCURACY MODE ON!");
-            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
-            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
-            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            Log.d(TAG, "UNKNOWN HIGH ACCURACY MODE ON!");
+
         }else if(detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.STILL.name())
                 || detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.TILTING.name())
                 ||detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.UNKNOWN.name())){
-            Log.d(TAG,"STILL BALANCED POWER MODE ON!");
-            //mLocationRequest.setInterval(30*1000);
-            //mLocationRequest.setFastestInterval(15*1000);
-            mLocationRequest.setPriority(LocationRequest.PRIORITY_NO_POWER);
+            Log.d(TAG, "STILL BALANCED POWER MODE ON!");
+            stopLocationUpdates();
+
         }else if(detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.ON_BICYCLE.name())
                 || detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.ON_FOOT.name())
                 ||detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.WALKING.name())){
-            Log.d(TAG,"WALKING BALANCED POWER MODE ON!");
-            mLocationRequest.setInterval(15*1000);
-            mLocationRequest.setFastestInterval(10*1000);
-            mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+            Log.d(TAG, "WALKING BALANCED POWER MODE ON!");
+            startLocationUpdates();
+
         }else if(detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.RUNNING.name())
                 || detectedActivity.equalsIgnoreCase(Constants.DETECTED_ACTIVITY.IN_VEHICLE.name())){
-            Log.d(TAG,"VEHICLE HIGH ACCURACY MODE ON!");
-            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
-            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
-            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            Log.d(TAG, "VEHICLE HIGH ACCURACY MODE ON!");
+            startLocationUpdates();
         }
-        return mLocationRequest;
     }
 
     private boolean servicesConnected() {
@@ -200,11 +198,26 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
     @Override
     public void onLocationChanged(Location location) {
         Log.d("Location received****",""+location.getLatitude());
-        /*Intent i=new Intent();
-        i.setAction("com.fullsleeves.location.intent");
-        i.putExtra("location",location);
-        sendBroadcast(i);*/
     }
 
+
+    public void startLocationUpdates(){
+        if(!isPollingLocation) {
+            if (checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, 1, 0) == PackageManager.PERMISSION_GRANTED
+                    || checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION, 1, 0) == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "inside checkperm");
+                LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, locationIntent);
+            }
+
+            isPollingLocation=true;
+        }
+    }
+
+    public  void stopLocationUpdates(){
+        if (isPollingLocation) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, locationIntent);
+            isPollingLocation=false;
+        }
+    }
 
 }

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:weightSum="1"
+    android:orientation="vertical" >
+
+    <TextView
+        android:layout_weight="0.10"
+        android:layout_margin="10dp"
+        android:id="@+id/heading"
+        android:text="@string/signature_heading"
+        android:gravity="center_horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.fullsleeves.tracknack.utils.DrawView
+        android:id="@+id/draw_view"
+        android:layout_weight="0.70"
+        android:layout_width="match_parent"
+        android:layout_height="0dip" />
+
+    <LinearLayout
+        android:layout_weight="0.20"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:weightSum="1"
+        android:layout_height="0dp">
+
+        <Button
+            android:id="@+id/clear_button"
+            android:layout_weight="0.50"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/clear" />
+
+        <Button
+            android:id="@+id/next_button"
+            android:layout_weight="0.50"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/next" />
+
+    </LinearLayout>
+
+
+</LinearLayout>
