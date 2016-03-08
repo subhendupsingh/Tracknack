@@ -1,5 +1,7 @@
 package com.fullsleeves.tracknack;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.support.v4.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -20,17 +22,26 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.fullsleeves.tracknack.fragments.ImageFragment;
+import com.fullsleeves.tracknack.fragments.ParentViewPagerFragment;
 import com.fullsleeves.tracknack.fragments.SignatureFragment;
+import com.fullsleeves.tracknack.fragments.UploadsFragment;
 import com.fullsleeves.tracknack.service.LocationService;
 import com.fullsleeves.tracknack.service.QuickstartPreferences;
 import com.fullsleeves.tracknack.service.RegistrationIntentService;
+import com.fullsleeves.tracknack.utils.TracknackUtils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener,UploadsFragment.OnFragmentInteractionListener {
 
     private BroadcastReceiver mRegistrationBroadcastReceiver;
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
@@ -84,11 +95,23 @@ public class MainActivity extends AppCompatActivity
 
         Fragment fragment=new ImageFragment();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.content_frame,fragment);
+        transaction.replace(R.id.content_frame, fragment);
         transaction.commit();
 
-        Intent i=new Intent(this,LocationService.class);
-        startService(i);
+        if(TracknackUtils.checkForPermission(MainActivity.this,Manifest.permission.ACCESS_FINE_LOCATION)
+                && TracknackUtils.checkForPermission(MainActivity.this,Manifest.permission.ACCESS_COARSE_LOCATION)
+                && TracknackUtils.checkForPermission(MainActivity.this,Manifest.permission.READ_PHONE_STATE)
+                && TracknackUtils.checkForPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE)){
+            Intent i=new Intent(this,LocationService.class);
+            startService(i);
+        }else{
+            List<String> permissions=new ArrayList<String>();
+            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+            permissions.add(Manifest.permission.READ_PHONE_STATE);
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            TracknackUtils.askForMultiplePermissions(MainActivity.this, permissions);
+        }
     }
 
     @Override
@@ -135,7 +158,7 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.signature) {
             fragment=new SignatureFragment();
         } else if (id == R.id.nav_slideshow) {
-
+            fragment=new ParentViewPagerFragment();
         } else if (id == R.id.nav_manage) {
 
         } else if (id == R.id.nav_share) {
@@ -173,4 +196,51 @@ public class MainActivity extends AppCompatActivity
         }
         return true;
     }
+
+    @Override
+    public void onFragmentInteraction(String id) {
+        Toast.makeText(this,id,Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case Constants.REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS:
+            {
+                Map<String, Integer> perms = new HashMap<String, Integer>();
+                // Initial
+                perms.put(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.ACCESS_COARSE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                // Fill with results
+                for (int i = 0; i < permissions.length; i++)
+                    perms.put(permissions[i], grantResults[i]);
+                // Check for ACCESS_FINE_LOCATION
+                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        && perms.get(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    Intent intent = new Intent(this, RegistrationIntentService.class);
+                    startService(intent);
+                } else {
+                    Toast.makeText(MainActivity.this, "User has not granted permission for this operation!", Toast.LENGTH_SHORT)
+                            .show();
+                }
+            }
+            break;
+            case Constants.REQUEST_CODE_ASK_PERMISSIONS:
+            {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+
+                } else {
+                    // Permission Denied
+                    Toast.makeText(MainActivity.this, "User has not granted permission for this operation!", Toast.LENGTH_SHORT)
+                            .show();
+                }
+            }
+            break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+
+    }
 }
+

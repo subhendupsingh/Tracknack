@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:weightSum="1"
+    android:background="@color/white"
     android:orientation="vertical" >
 
     <TextView
@@ -24,6 +25,7 @@
         android:layout_weight="0.20"
         android:layout_width="match_parent"
         android:orientation="horizontal"
+        android:layout_margin="5dp"
         android:weightSum="1"
         android:layout_height="0dp">
 
@@ -32,6 +34,9 @@
             android:layout_weight="0.50"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:background="@color/red"
+            android:layout_marginRight="5dp"
+            android:textColor="@color/white"
             android:text="@string/clear" />
 
         <Button
@@ -39,6 +44,8 @@
             android:layout_weight="0.50"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:background="@color/red"
+            android:textColor="@color/white"
             android:text="@string/next" />
 
     </LinearLayout>

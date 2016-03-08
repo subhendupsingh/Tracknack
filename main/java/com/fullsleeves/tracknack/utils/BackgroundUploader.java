@@ -4,10 +4,16 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.fullsleeves.tracknack.Constants;
+import com.fullsleeves.tracknack.R;
 import com.fullsleeves.tracknack.entities.Media;
+import com.fullsleeves.tracknack.fragments.ParentViewPagerFragment;
 import com.fullsleeves.tracknack.receiver.NetworkChangeReceiver;
 
 import java.io.BufferedInputStream;
@@ -45,12 +51,38 @@ public class BackgroundUploader extends AsyncTask<Void, Integer, Void> implement
     private PrintWriter writer;
     private List<MultipartEntity> formFields;
     private boolean showProgressDialog=false;
+    private boolean isOffline;
+    private Media workerMedia;
+    private int mediaId;
+    private DataSource dataSource;
+    private FragmentTransaction ft;
 
-    public BackgroundUploader(Context context, List<MultipartEntity> formFields,boolean showProgressDialog) {
+    public BackgroundUploader(Context context, List<MultipartEntity> formFields,boolean isOffline,boolean showProgressDialog) {
         this.context=context;
         this.formFields=formFields;
         boundary = System.currentTimeMillis()+"";
         this.showProgressDialog=showProgressDialog;
+        this.isOffline=isOffline;
+        dataSource=new DataSource(context);
+    }
+
+    public BackgroundUploader(Context context, List<MultipartEntity> formFields,boolean isOffline,boolean showProgressDialog,FragmentTransaction ft) {
+        this.context=context;
+        this.formFields=formFields;
+        boundary = System.currentTimeMillis()+"";
+        this.showProgressDialog=showProgressDialog;
+        this.isOffline=isOffline;
+        dataSource=new DataSource(context);
+        this.ft=ft;
+    }
+
+    public BackgroundUploader(Context context, List<MultipartEntity> formFields,boolean isOffline,Media media) {
+        this.context=context;
+        this.formFields=formFields;
+        boundary = System.currentTimeMillis()+"";
+        this.isOffline=isOffline;
+        dataSource=new DataSource(context);
+        this.mediaId=media.getId();
     }
 
     @Override
@@ -92,11 +124,17 @@ public class BackgroundUploader extends AsyncTask<Void, Integer, Void> implement
             }
 
             try {
-
+                workerMedia=new Media();
                 if (formFields != null && formFields.size() > 0) {
                     for (MultipartEntity field : formFields) {
                         if (field.getType() == Constants.TYPE_FORM_FIELD) {
                             addFormField(field.getParamName(), field.getParamValue());
+                            if(field.getParamName().equalsIgnoreCase("title")){
+                                workerMedia.setTitle(field.getParamValue());
+                            }
+                            if(field.getParamName().equalsIgnoreCase("description")){
+                                workerMedia.setDescription(field.getParamValue());
+                            }
                         }
 
                         if (field.getType() == Constants.TYPE_IMAGE_FIELD) {
@@ -104,6 +142,7 @@ public class BackgroundUploader extends AsyncTask<Void, Integer, Void> implement
                             if (null != filePath && !filePath.isEmpty()) {
                                 File file = new File(field.getFilePath());
                                 addFilePart(field.getFileName(), file);
+                                workerMedia.setUri(filePath);
                             }
                         }
                     }
@@ -143,7 +182,7 @@ public class BackgroundUploader extends AsyncTask<Void, Integer, Void> implement
             }
         }
         media.setIsUploadCompleted(0);
-        TracknackUtils.saveForFuture(media,context);
+        TracknackUtils.saveForFuture(media, context);
         if(progressDialog!=null){
             progressDialog.dismiss();
         }
@@ -159,6 +198,17 @@ public class BackgroundUploader extends AsyncTask<Void, Integer, Void> implement
         if(progressDialog!=null) {
             progressDialog.dismiss();
         }
+
+        if(!isOffline) {
+            Toast.makeText(context, "Media Uploaded Successfully!", Toast.LENGTH_SHORT).show();
+
+            if(ft!=null){
+                ft.replace(R.id.content_frame, new ParentViewPagerFragment());
+                ft.addToBackStack(null);
+                ft.commit();
+            }
+        }
+
     }
 
     @Override
@@ -230,6 +280,18 @@ public class BackgroundUploader extends AsyncTask<Void, Integer, Void> implement
         // checks server's status code first
         int status = httpConn.getResponseCode();
         if (status == HttpURLConnection.HTTP_OK) {
+            if(workerMedia!=null) {
+                if (isOffline) {
+                    dataSource.open();
+                    dataSource.removeFromOfflineUpload(mediaId);
+                    dataSource.close();
+                } else {
+                    workerMedia.setIsUploadCompleted(1);
+                    dataSource.open();
+                    dataSource.addForOfflineUpload(workerMedia);
+                    dataSource.close();
+                }
+            }
             BufferedReader reader = new BufferedReader(new InputStreamReader(
                     httpConn.getInputStream()));
             String line = null;
@@ -239,17 +301,10 @@ public class BackgroundUploader extends AsyncTask<Void, Integer, Void> implement
             reader.close();
             httpConn.disconnect();
         } else {
-           /* BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    httpConn.getErrorStream()));
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                response.add(line);
-                Log.e("error",line);
-            }
-            reader.close();*/
             throw new IOException("Server returned non-OK status: " + status);
         }
 
         return response;
     }
+
 }

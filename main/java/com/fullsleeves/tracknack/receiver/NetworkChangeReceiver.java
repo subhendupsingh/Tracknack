@@ -98,8 +98,7 @@ public class NetworkChangeReceiver extends BroadcastReceiver {
                         entity.setParamValue(media.getDescription());
                         formFields.add(entity);
                     }
-                    new BackgroundUploader(context,formFields,false).execute();
-                   // ds.removeFromOfflineUpload(temp);
+                    new BackgroundUploader(context,formFields,true,media).execute();
                     Toast.makeText(context, "Successfully uploaded:", Toast.LENGTH_SHORT).show();
                 }
             }catch (Exception e){

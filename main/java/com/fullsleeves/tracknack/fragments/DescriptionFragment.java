@@ -1,8 +1,10 @@
 package com.fullsleeves.tracknack.fragments;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,65 +26,67 @@ public class DescriptionFragment extends Fragment {
 
     private Button button;
     private String filePath;
-    private EditText titleEditText,descriptionEditText;
+    private EditText titleEditText, descriptionEditText;
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        Bundle bundle=getArguments();
-        filePath=bundle.getString("filePath");
+        Bundle bundle = getArguments();
+        filePath = bundle.getString("filePath");
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-         super.onCreateView(inflater, container, savedInstanceState);
-        View v=inflater.inflate(R.layout.description_fragment,container,false);
-        button=(Button) v.findViewById(R.id.submit);
-        titleEditText=(EditText) v.findViewById(R.id.title);
-        descriptionEditText=(EditText) v.findViewById(R.id.description);
+        super.onCreateView(inflater, container, savedInstanceState);
+        View v = inflater.inflate(R.layout.description_fragment, container, false);
+        button = (Button) v.findViewById(R.id.submit);
+        titleEditText = (EditText) v.findViewById(R.id.title);
+        descriptionEditText = (EditText) v.findViewById(R.id.description);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final List<MultipartEntity> formFields=new ArrayList<MultipartEntity>();
-                String title=titleEditText.getText().toString();
-                String description=descriptionEditText.getText().toString();
-                String imei=TracknackUtils.getDeviceImei(getActivity());
+                final List<MultipartEntity> formFields = new ArrayList<MultipartEntity>();
+                String title = titleEditText.getText().toString();
+                String description = descriptionEditText.getText().toString();
+                String imei = TracknackUtils.getDeviceImei(getActivity());
 
-                if(null!=title && !title.isEmpty()){
-                    MultipartEntity entity=new MultipartEntity();
+                if (null != title && !title.isEmpty()) {
+                    MultipartEntity entity = new MultipartEntity();
                     entity.setType(Constants.TYPE_FORM_FIELD);
                     entity.setParamName("title");
                     entity.setParamValue(title);
                     formFields.add(entity);
                 }
 
-                if(null!=description && !description.isEmpty()){
-                    MultipartEntity entity=new MultipartEntity();
+                if (null != description && !description.isEmpty()) {
+                    MultipartEntity entity = new MultipartEntity();
                     entity.setType(Constants.TYPE_FORM_FIELD);
                     entity.setParamName("description");
                     entity.setParamValue(description);
                     formFields.add(entity);
                 }
 
-                if(null!=imei && !imei.isEmpty()){
-                    MultipartEntity entity=new MultipartEntity();
+                if (null != imei && !imei.isEmpty()) {
+                    MultipartEntity entity = new MultipartEntity();
                     entity.setType(Constants.TYPE_FORM_FIELD);
                     entity.setParamName("imei");
                     entity.setParamValue(imei);
                     formFields.add(entity);
                 }
 
-                if(null!=filePath && !filePath.isEmpty()){
-                    MultipartEntity entity=new MultipartEntity();
+                if (null != filePath && !filePath.isEmpty()) {
+                    MultipartEntity entity = new MultipartEntity();
                     entity.setType(Constants.TYPE_IMAGE_FIELD);
                     entity.setFileName("file");
                     entity.setFilePath(filePath);
-                    Log.d("FILEPATH",filePath);
+                    Log.d("FILEPATH", filePath);
                     formFields.add(entity);
                 }
 
-                new BackgroundUploader(getActivity(),formFields,true).execute();
+                FragmentTransaction txn = getFragmentManager().beginTransaction();
+                new BackgroundUploader(getActivity(), formFields, false, true, txn).execute();
+
 
             }
         });

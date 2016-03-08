@@ -1,5 +1,6 @@
 package com.fullsleeves.tracknack.fragments;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -21,7 +22,9 @@ import android.widget.Button;
 import android.widget.ImageView;
 
 import com.fullsleeves.tracknack.Constants;
+import com.fullsleeves.tracknack.MainActivity;
 import com.fullsleeves.tracknack.R;
+import com.fullsleeves.tracknack.utils.TracknackUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -59,10 +62,15 @@ public class ImageFragment extends Fragment {
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                fileUri = getOutputMediaFileUri();
-                intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
-                startActivityForResult(intent, REQUEST_CAMERA);
+                if(TracknackUtils.checkForPermission(getActivity(),Manifest.permission.CAMERA)){
+                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    fileUri = getOutputMediaFileUri();
+                    intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
+                    startActivityForResult(intent, REQUEST_CAMERA);
+                }else {
+                    TracknackUtils.askRequiredPermissions(getActivity(),Manifest.permission.CAMERA,"Please grant permission to access camera to use this feature!");
+                }
+
             }
         });
 

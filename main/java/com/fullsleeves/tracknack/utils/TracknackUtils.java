@@ -1,19 +1,29 @@
 package com.fullsleeves.tracknack.utils;
 
+import android.Manifest;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.BatteryManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.fullsleeves.tracknack.Constants;
 import com.fullsleeves.tracknack.entities.Media;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -102,6 +112,87 @@ public class TracknackUtils {
         }else {
             Toast.makeText(context, "Image added for future upload", Toast.LENGTH_SHORT).show();
         }
+    }
+
+
+    public static void askRequiredPermissions(final Activity activity,final String permission,final String message) {
+        int hasWriteContactsPermission = ActivityCompat.checkSelfPermission(activity,permission);
+        if (hasWriteContactsPermission != PackageManager.PERMISSION_GRANTED) {
+            if (!ActivityCompat.shouldShowRequestPermissionRationale(activity,permission)) {
+                showMessageOKCancel(activity,message,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ActivityCompat.requestPermissions(activity,new String[]{permission},
+                                        Constants.REQUEST_CODE_ASK_PERMISSIONS);
+                            }
+                        });
+                return;
+            }
+            ActivityCompat.requestPermissions(activity, new String[]{permission},
+                    Constants.REQUEST_CODE_ASK_PERMISSIONS);
+            return;
+        }
+    }
+
+    private static void showMessageOKCancel(Activity activity,String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(activity)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show();
+    }
+
+    public static boolean checkForPermission(Activity activity,String permission){
+        if(ActivityCompat.checkSelfPermission(activity,permission)==PackageManager.PERMISSION_GRANTED){
+            return true;
+        }
+
+        return false;
+    }
+
+    public static void askForMultiplePermissions(final Activity activity, final List<String> permissionsList) {
+        List<String> permissionsNeeded = new ArrayList<String>();
+
+        if (!addPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION))
+            permissionsNeeded.add("Fine Location");
+        if (!addPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION))
+            permissionsNeeded.add("Caorse Location");
+        if (!addPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            permissionsNeeded.add("Storage");
+        if (!addPermission(activity, Manifest.permission.READ_PHONE_STATE))
+            permissionsNeeded.add("Write Contacts");
+
+        if (permissionsList.size() > 0) {
+            if (permissionsNeeded.size() > 0) {
+                // Need Rationale
+                String message = "You need to grant access to " + permissionsNeeded.get(0);
+                for (int i = 1; i < permissionsNeeded.size(); i++)
+                    message = message + ", " + permissionsNeeded.get(i);
+                showMessageOKCancel(activity,message,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ActivityCompat.requestPermissions(activity,permissionsList.toArray(new String[permissionsList.size()]),
+                                        Constants.REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+                            }
+                        });
+                return;
+            }
+            ActivityCompat.requestPermissions(activity,permissionsList.toArray(new String[permissionsList.size()]),
+                    Constants.REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+            return;
+        }
+
+    }
+
+    private static boolean addPermission(Activity activity, String permission) {
+        if (ActivityCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (!ActivityCompat.shouldShowRequestPermissionRationale(activity, permission))
+                return false;
+        }
+        return true;
     }
 
 }

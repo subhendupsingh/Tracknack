@@ -2,22 +2,47 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
+    android:layout_margin="10dp"
     android:weightSum="1">
 
-    <EditText
+    <android.support.design.widget.TextInputLayout
+        android:id="@+id/input_layout_title"
+        android:layout_weight="0.20"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/title"
-        android:hint="Title" />
+        android:layout_height="0dp">
 
-    <EditText
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:minLines="2"
+            android:id="@+id/title"
+            android:hint="Title" />
+
+    </android.support.design.widget.TextInputLayout>
+
+
+    <android.support.design.widget.TextInputLayout
+        android:id="@+id/input_layout_description"
+        android:layout_weight="0.78"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/description"
-        android:layout_weight="0.97"
-        android:hint="@string/description"
-        android:allowUndo="true"
-        android:elegantTextHeight="false" />
+        android:layout_height="0dp">
+
+        <EditText
+            android:id="@+id/description"
+            android:inputType="textMultiLine"
+            android:lines="8"
+            android:minLines="10"
+            android:gravity="top|left"
+            android:hint="@string/description"
+            android:maxLines="10"
+            android:layout_height="match_parent"
+            android:layout_width="fill_parent"
+            android:scrollbars="vertical" />
+
+    </android.support.design.widget.TextInputLayout>
+
+
 
     <Button
         android:layout_width="match_parent"
@@ -25,6 +50,7 @@
         android:text="@string/submit"
         android:textColor="@color/white"
         android:background="@color/red"
+        android:layout_margin="5dp"
         android:id="@+id/submit"
         android:longClickable="true"
         android:singleLine="false" />

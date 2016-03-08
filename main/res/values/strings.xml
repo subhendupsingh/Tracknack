@@ -1,9 +1,7 @@
 <resources>
     <string name="app_name">Tracknack</string>
-
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-
     <string name="action_settings">Settings</string>
     <string name="gcm_defaultSenderId">343011968201</string>
     <string name="upstream_message_id_not_provided">Upstream Message ID not provided!</string>
@@ -14,4 +12,5 @@
     <string name="signature_heading">Please Sign Below</string>
     <string name="pick_from_galler">GALLERY</string>
     <string name="click_pic">CAMERA</string>
+    <string name="copyright">&#169; Full Sleeves Technologies 2016</string>
 </resources>

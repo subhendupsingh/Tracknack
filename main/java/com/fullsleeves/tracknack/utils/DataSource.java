@@ -10,6 +10,7 @@ import com.fullsleeves.tracknack.entities.Media;
 import com.fullsleeves.tracknack.utils.SqliteHelper;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by enigma-pc on 3/1/16.
@@ -46,8 +47,8 @@ public class DataSource {
         return id;
     }
 
-    public void removeFromOfflineUpload(String uri){
-        String querry = "delete from "+ SqliteHelper.TABLE_MEDIA + " where "+ SqliteHelper.KEY_URI +" = '"+uri+"'";
+    public void removeFromOfflineUpload(int id){
+        String querry = "update "+ SqliteHelper.TABLE_MEDIA + " set "+ SqliteHelper.KEY_UPLOAD_FLAG +" = '1' where "+SqliteHelper.KEY_ID+"='"+id+"'";
         try{
             db.execSQL(querry);
         }catch(Exception e){
@@ -66,6 +67,7 @@ public class DataSource {
                         int i = 0;
                         while (!c.isAfterLast()){
                             Media media=new Media();
+                            media.setId(c.getInt(c.getColumnIndex(SqliteHelper.KEY_ID)));
                             media.setUri(c.getString(c.getColumnIndex(SqliteHelper.KEY_URI)));
                             media.setTitle(c.getString(c.getColumnIndex(SqliteHelper.KEY_TITLE)));
                             media.setDescription(c.getString(c.getColumnIndex(SqliteHelper.KEY_DESCRIPTION)));
@@ -85,4 +87,33 @@ public class DataSource {
         return arr;
     }
 
+
+    public List<Media> getUploadedImagesList(){
+        List<Media> mediaList=new ArrayList<Media>();
+        String query="select * from "+SqliteHelper.TABLE_MEDIA+" where "+SqliteHelper.KEY_UPLOAD_FLAG+"='1' order by id desc";
+        Cursor c = db.rawQuery(query, null);
+        try{
+            if(c.getCount() > 0){
+                c.moveToFirst();
+                int i = 0;
+                while (!c.isAfterLast()){
+                    Media media=new Media();
+                    media.setUri(c.getString(c.getColumnIndex(SqliteHelper.KEY_URI)));
+                    media.setTitle(c.getString(c.getColumnIndex(SqliteHelper.KEY_TITLE)));
+                    media.setDescription(c.getString(c.getColumnIndex(SqliteHelper.KEY_DESCRIPTION)));
+                    media.setIsUploadCompleted(c.getInt(c.getColumnIndex(SqliteHelper.KEY_UPLOAD_FLAG)));
+                    mediaList.add(media);
+                    i++;
+                    c.moveToNext();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            if(c!=null)
+                c.close();
+        }
+
+        return mediaList;
+    }
 }
